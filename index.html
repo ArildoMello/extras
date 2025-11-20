@@ -1,238 +1,613 @@
-HTML<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Escala GMs - Novembro 2025</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  
   <style>
-    *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif}
-    :root{
-      --bg:#07051a;--text:#eaf1ff;--accent:#00e6ff;--purple:#7c4dff;
-      --grad:linear-gradient(135deg,#00e6ff,#7c4dff);
-      --card:rgba(20,25,60,.95);--border:rgba(100,150,255,.3);
-      --menu-bg:rgba(10,15,45,.98);
+    /* --- Variáveis e Reset --- */
+    :root {
+      --bg: #07051a;
+      --text: #eaf1ff;
+      --accent: #00e6ff;
+      --purple: #7c4dff;
+      --grad: linear-gradient(135deg, #00e6ff, #7c4dff);
+      --card: rgba(20, 25, 60, 0.95);
+      --border: rgba(100, 150, 255, 0.3);
+      --menu-bg: rgba(10, 15, 45, 0.98);
+      --highlight: rgba(255, 235, 59, 0.4);
     }
-    body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;position:relative;overflow-x:hidden}
-    body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 20% 80%,rgba(0,230,255,.12),transparent 50%);pointer-events:none;z-index:0}
-    nav{width:80px;background:var(--menu-bg);backdrop-filter:blur(15px);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;z-index:100;padding:25px 0;transition:width .4s cubic-bezier(0.25,0.8,0.25,1);overflow:hidden}
-    nav:hover{width:280px}
-    #menuBtn{display:none;position:fixed;top:18px;left:18px;z-index:101;background:var(--accent);color:#000;border:none;width:52px;height:52px;border-radius:50%;font-size:1.8rem;cursor:pointer;box-shadow:0 5px 20px rgba(0,230,255,.6)}
-    .logo{text-align:center;margin:30px 0 50px;white-space:nowrap;overflow:hidden}
-    .logo h1{font-size:2.4rem;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;opacity:0;transition:opacity .3s .2s}
-    nav:hover .logo h1{opacity:1}
-    .menu a{display:flex;align-items:center;gap:18px;padding:18px 20px;margin:8px 15px;border-radius:16px;color:var(--text);text-decoration:none;font-weight:600;font-size:1.1rem;transition:all .35s;position:relative;overflow:hidden;white-space:nowrap}
-    .menu a i{font-size:1.8rem;min-width:40px;text-align:center;flex-shrink:0}
-    .menu a span{opacity:0;transition:opacity .3s .1s}
-    nav:hover .menu a span{opacity:1}
-    .menu a::before{content:"";position:absolute;inset:0;background:var(--grad);opacity:0;transition:opacity .4s;z-index:-1}
-    .menu a:hover{background:rgba(0,230,255,.25);box-shadow:0 8px 30px rgba(0,230,255,.4);transform:translateY(-4px);color:#fff}
-    .menu a:hover::before{opacity:0.15}
-    .menu a.active{background:var(--grad);color:#000;font-weight:900;box-shadow:0 10px 35px rgba(0,230,255,.6)}
-    .menu a.active i{color:#000}
-    main{flex:1;padding:30px;margin-left:80px;transition:margin-left .4s ease;position:relative;z-index:1;overflow-x:auto}
-    nav:hover ~ main{margin-left:280px}
-    h2{text-align:center;font-size:2.8rem;margin:25px 0 35px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900}
-    .filtro{text-align:center;margin:35px 0}
-    input[type="text"]{padding:18px 32px;width:100%;max-width:720px;font-size:1.4rem;border-radius:18px;border:3px solid var(--accent);background:var(--bg);color:#fff;box-shadow:0 0 40px rgba(0,230,255,.5);outline:none;transition:all .3s}
-    input[type="text"]:focus{box-shadow:0 0 70px rgba(0,230,255,.8);transform:scale(1.02);border-color:#7c4dff}
-    table{width:100%;max-width:none;border-collapse:separate;border-spacing:0;background:var(--card);border-radius:20px;overflow:hidden;box-shadow:0 25px 80px rgba(0,0,0,.7)}
-    th{background:var(--grad);color:#000;padding:18px 12px;font-weight:900;font-size:1rem;position:sticky;top:0;z-index:10;white-space:nowrap}
-    td{padding:15px 10px;text-align:center;border-bottom:1px solid var(--border);font-size:1rem;white-space:nowrap}
-    tr:hover td{background:rgba(0,230,255,.15)}
-    .dia{font-weight:bold;background:rgba(47,123,255,.3);color:#c0e8ff;width:120px}
-    .nome{color:var(--accent);font-weight:800;text-shadow:0 0 15px var(--accent)}
-    .loading,.nenhum{text-align:center;padding:90px;font-size:2.1rem}
-    .loading{color:var(--accent);text-shadow:0 0 20px var(--accent)}
-    .nenhum{color:#ff6b6b}
-    .total{text-align:center;margin:30px;color:var(--accent);font-size:1.6rem;font-weight:bold}
-    .tab{display:none}
-    .tab.active{display:block}
-    @media(max-width:768px){
-      #menuBtn{display:block}
-      nav{width:280px;transform:translateX(-100%)}
-      nav.open{transform:translateX(0)}
-      main{margin-left:0 !important;padding:80px 20px 40px}
-      .logo h1{opacity:1}
-      .menu a span{opacity:1}
-      th{font-size:0.85rem;padding:12px 6px}
-      td{font-size:0.9rem;padding:12px 6px}
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+
+    /* --- Estrutura Principal --- */
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 20% 80%, rgba(0, 230, 255, 0.08), transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* --- Navegação (Sidebar) --- */
+    nav {
+      width: 80px;
+      background: var(--menu-bg);
+      backdrop-filter: blur(15px);
+      border-right: 1px solid var(--border);
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      z-index: 1000;
+      padding: 25px 0;
+      transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (min-width: 769px) {
+      nav:hover { width: 280px; }
+      nav:hover .logo h1 { opacity: 1; }
+      nav:hover .menu a span { opacity: 1; }
+    }
+
+    .logo h1 {
+      font-size: 1.8rem;
+      font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      opacity: 0;
+      transition: opacity 0.3s 0.2s;
+      text-align: center;
+      margin: 10px 0 40px;
+      white-space: nowrap;
+    }
+
+    .menu { display: flex; flex-direction: column; gap: 10px; }
+
+    .menu a {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 15px 22px;
+      margin: 0 12px;
+      border-radius: 12px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .menu a i { font-size: 1.6rem; min-width: 35px; text-align: center; font-style: normal; }
+    .menu a span { opacity: 0; transition: opacity 0.3s 0.1s; }
+
+    .menu a:hover {
+      background: rgba(0, 230, 255, 0.15);
+      color: #fff;
+      transform: translateX(5px);
+    }
+
+    .menu a.active {
+      background: var(--grad);
+      color: #000;
+      box-shadow: 0 5px 20px rgba(0, 230, 255, 0.4);
+    }
+
+    #menuBtn {
+      display: none;
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      z-index: 1100;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 230, 255, 0.5);
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* --- Conteúdo Principal --- */
+    main {
+      flex: 1;
+      margin-left: 80px;
+      padding: 40px;
+      transition: margin-left 0.4s ease;
+      position: relative;
+      z-index: 1;
+      width: calc(100% - 80px);
+    }
+
+    @media (min-width: 769px) {
+      nav:hover ~ main { margin-left: 280px; }
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 30px;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-weight: 900;
+    }
+
+    /* --- Inputs e Filtros --- */
+    .filtro { text-align: center; margin-bottom: 30px; position: relative; }
+
+    #buscaGM {
+      padding: 16px 30px;
+      width: 100%;
+      max-width: 600px;
+      font-size: 1.2rem;
+      border-radius: 50px;
+      border: 2px solid var(--accent);
+      background: rgba(7, 5, 26, 0.8);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(0, 230, 255, 0.2);
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    #buscaGM:focus {
+      box-shadow: 0 0 40px rgba(0, 230, 255, 0.5);
+      transform: scale(1.01);
+    }
+
+    /* --- Tabelas e Drag Scroll --- */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 15px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      
+      /* CURSOR PARA ARRASTAR */
+      cursor: grab; 
+      cursor: -webkit-grab;
+      user-select: none; /* Evita selecionar texto enquanto arrasta */
+    }
+
+    /* Quando estiver clicando/arrastando */
+    .table-container.active {
+      cursor: grabbing;
+      cursor: -webkit-grabbing;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: var(--card);
+    }
+
+    th {
+      background: var(--grad);
+      color: #000;
+      padding: 15px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      white-space: nowrap;
+      letter-spacing: 0.5px;
+      pointer-events: none; /* Melhora o arrastar clicando no cabeçalho */
+    }
+
+    td {
+      padding: 12px 15px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.95rem;
+      white-space: nowrap;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(0, 230, 255, 0.08); }
+
+    .dia {
+      font-weight: bold;
+      background: rgba(47, 123, 255, 0.1);
+      color: #c0e8ff;
+      border-right: 1px solid rgba(255,255,255,0.05);
+    }
+    
+    .nome {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .highlight {
+      background-color: var(--highlight);
+      color: #fff;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    /* --- Estados --- */
+    .loading, .nenhum, .erro-msg {
+      text-align: center;
+      padding: 60px 20px;
+      font-size: 1.5rem;
+    }
+    .loading { color: var(--accent); animation: pulse 1.5s infinite; }
+    .nenhum { color: #ff6b6b; display: none; }
+    .erro-msg { color: #ff6b6b; display: none; flex-direction: column; gap: 15px; align-items: center;}
+    
+    .btn-retry {
+        background: var(--accent); border: none; padding: 10px 20px; 
+        border-radius: 8px; cursor: pointer; font-weight: bold;
+    }
+
+    .total {
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--accent);
+      font-size: 1.2rem;
+      background: rgba(0, 230, 255, 0.1);
+      display: inline-block;
+      padding: 8px 20px;
+      border-radius: 20px;
+      left: 50%;
+      position: relative;
+      transform: translateX(-50%);
+    }
+
+    .tab { display: none; animation: fadeIn 0.5s ease; }
+    .tab.active { display: block; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+    @media (max-width: 768px) {
+      #menuBtn { display: flex; }
+      
+      nav {
+        width: 280px;
+        transform: translateX(-100%);
+      }
+      
+      nav.open { transform: translateX(0); box-shadow: 5px 0 30px rgba(0,0,0,0.8); }
+      
+      nav:hover { width: 280px; } 
+      
+      main {
+        margin-left: 0 !important;
+        width: 100%;
+        padding: 80px 15px 30px;
+      }
+
+      .logo h1 { opacity: 1; display: block; font-size: 1.5rem; margin-bottom: 20px; }
+      .menu a span { opacity: 1; }
+
+      h2 { font-size: 1.8rem; }
+      
+      th, td { font-size: 0.85rem; padding: 10px 8px; }
+      
+      #buscaGM { font-size: 1rem; padding: 12px 20px; }
     }
   </style>
 </head>
 <body>
-  <button id="menuBtn">Menu</button>
+
+  <button id="menuBtn">☰</button>
+
   <nav id="nav">
     <div class="logo"><h1>Escala GMs</h1></div>
     <div class="menu">
-      <a href="#" class="active" data-tab="completa">Tabela <span>Escala Completa</span></a>
-      <a href="#" data-tab="pesquisa">Lupa <span>Pesquisar por GM</span></a>
+      <a href="#" class="active" data-tab="completa">
+        <i>📋</i> <span>Escala Completa</span>
+      </a>
+      <a href="#" data-tab="pesquisa">
+        <i>🔍</i> <span>Pesquisar por GM</span>
+      </a>
     </div>
   </nav>
+
   <main>
     <div id="completa" class="tab active">
       <h2>Escala Completa - Novembro 2025</h2>
-      <div id="loading1" class="loading">Carregando escala completa...</div>
-      <table id="tabelaCompleta" style="display:none">
-        <thead id="cabecalhoCompleta"></thead>
-        <tbody id="corpoCompleta"></tbody>
-      </table>
+      
+      <div id="loading1" class="loading">Carregando escala...</div>
+      <div id="erro1" class="erro-msg">
+          Falha ao carregar a planilha.
+          <button class="btn-retry" onclick="location.reload()">Recarregar Página</button>
+      </div>
+
+      <div class="table-container drag-scroll" id="containerCompleta" style="display:none">
+        <table id="tabelaCompleta">
+          <thead id="cabecalhoCompleta"></thead>
+          <tbody id="corpoCompleta"></tbody>
+        </table>
+      </div>
     </div>
+
     <div id="pesquisa" class="tab">
       <h2>Pesquisar por GM</h2>
-      <p style="text-align:center;color:#aabfff;margin-bottom:20px">Digite o nome do GM para ver todos os dias e locais</p>
       <div class="filtro">
-        <input type="text" id="buscaGM" placeholder="Ex: RODRIGUES, BARBOSA, ALEX..." autofocus autocomplete="off">
+        <input type="text" id="buscaGM" placeholder="Digite o nome do GM..." autocomplete="off">
       </div>
-      <div id="loading2" class="loading">Carregando dados...</div>
-      <div id="nenhum" class="nenhum" style="display:none">Nenhum resultado encontrado</div>
+
+      <div id="loading2" class="loading">Sincronizando dados...</div>
+      <div id="nenhum" class="nenhum">Nenhum resultado encontrado</div>
+      
       <div id="resultados" style="display:none">
         <div class="total">Dias encontrados: <span id="contador">0</span></div>
-        <table>
-          <thead><tr><th>Dia</th><th>Data</th><th>GM</th><th>Posto / Horário</th></tr></thead>
-          <tbody id="listaGM"></tbody>
-        </table>
+        <div class="table-container drag-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Dia</th>
+                <th>Data</th>
+                <th>GM</th>
+                <th>Posto / Horário</th>
+              </tr>
+            </thead>
+            <tbody id="listaGM"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </main>
 
   <script>
-    // Menu mobile (igual)
-    document.getElementById('menuBtn').addEventListener('click', function(e) {
+    // === Configurações ===
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/1FpHBCrWWeS-Q0jq1ZH-NxYT1-fAtxq_YA_pbhaZwEYA/export?format=csv&gid=0";
+    const PROXY_URL = "https://api.allorigins.win/raw?url=";
+
+    let dadosPlanilha = [];
+    let dadosGM = [];
+
+    // === LÓGICA DO DRAG SCROLL (Arrastar) ===
+    // Aplica a todos os elementos com classe .table-container
+    function ativarDragScroll() {
+        const sliders = document.querySelectorAll('.table-container');
+
+        sliders.forEach(slider => {
+            let isDown = false;
+            let startX;
+            let scrollLeft;
+
+            slider.addEventListener('mousedown', (e) => {
+                isDown = true;
+                slider.classList.add('active'); // Muda cursor
+                startX = e.pageX - slider.offsetLeft;
+                scrollLeft = slider.scrollLeft;
+            });
+
+            slider.addEventListener('mouseleave', () => {
+                isDown = false;
+                slider.classList.remove('active');
+            });
+
+            slider.addEventListener('mouseup', () => {
+                isDown = false;
+                slider.classList.remove('active');
+            });
+
+            slider.addEventListener('mousemove', (e) => {
+                if(!isDown) return;
+                e.preventDefault(); // Previne selecionar texto
+                const x = e.pageX - slider.offsetLeft;
+                const walk = (x - startX) * 2; // Velocidade do scroll (x2)
+                slider.scrollLeft = scrollLeft - walk;
+            });
+        });
+    }
+
+    // === Controle do Menu Mobile ===
+    const nav = document.getElementById('nav');
+    const menuBtn = document.getElementById('menuBtn');
+
+    menuBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const nav = document.getElementById('nav');
       nav.classList.toggle('open');
-      this.textContent = nav.classList.contains('open') ? 'Close' : 'Menu';
+      menuBtn.textContent = nav.classList.contains('open') ? '✕' : '☰';
     });
-    document.addEventListener('click', function(e) {
-      if (window.innerWidth <= 768 && document.getElementById('nav').classList.contains('open')) {
-        const nav = document.getElementById('nav');
-        const btn = document.getElementById('menuBtn');
-        if (!nav.contains(e.target) && !btn.contains(e.target)) {
+
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth <= 768 && nav.classList.contains('open')) {
+        if (!nav.contains(e.target) && !menuBtn.contains(e.target)) {
           nav.classList.remove('open');
-          btn.textContent = 'Menu';
+          menuBtn.textContent = '☰';
         }
       }
     });
 
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/1FpHBCrWWeS-Q0jq1ZH-NxYT1-fAtxq_YA_pbhaZwEYA/export?format=csv&gid=0";
-    let dadosPlanilha = [], dadosGM = [];
-
+    // === Lógica de Dados ===
     async function carregarTudo() {
       try {
-        const r = await fetch("https://corsproxy.io/?" + encodeURIComponent(CSV_URL));
-        const texto = await r.text();
-        dadosPlanilha = Papa.parse(texto, {skipEmptyLines: true}).data;
+        const response = await fetch(PROXY_URL + encodeURIComponent(CSV_URL));
+        if (!response.ok) throw new Error("Erro na resposta da rede");
+        
+        const textoCSV = await response.text();
+        const result = Papa.parse(textoCSV, { skipEmptyLines: true });
+        dadosPlanilha = result.data;
 
-        // === CABEÇALHO (igual ao seu funcionando) ===
-        const linhaCabecalho = dadosPlanilha[1] || [];
-        const postos = linhaCabecalho.slice(2);
-        let htmlCab = "<tr><th>Dia</th><th>Data</th>";
-        postos.forEach((posto, index) => {
-          let nomePosto = (posto || '').trim();
-          if (!nomePosto) nomePosto = `Posto ${index + 1}`;
-          else nomePosto = nomePosto.replace(/^E\d+\s*-?\s*/i, '').trim();
-          htmlCab += `<th title="Posto ${index + 1}">${nomePosto}</th>`;
-        });
-        htmlCab += "</tr>";
-        document.getElementById("cabecalhoCompleta").innerHTML = htmlCab;
+        if (!dadosPlanilha || dadosPlanilha.length < 5) throw new Error("Dados insuficientes");
 
-        // === CORPO DA TABELA (igual) ===
-        const corpo = document.getElementById("corpoCompleta");
-        corpo.innerHTML = "";
-        for (let i = 3; i < dadosPlanilha.length; i++) {
-          const linha = dadosPlanilha[i];
-          if (!linha[0] || !linha[1]) continue;
-          const tr = document.createElement("tr");
-          const nomesNaLinha = (linha.slice(2) || []).filter(n => n && n.trim()).map(n => n.trim().toUpperCase()).join(" ");
-          tr.dataset.nomes = nomesNaLinha;
-          let html = `<td class="dia">${linha[0].trim()}</td><td class="dia">${linha[1].trim()}</td>`;
-          for (let j = 2; j < linha.length; j++) {
-            const nome = (linha[j] || '').trim();
-            html += `<td class="${nome ? 'nome' : ''}">${nome || '-'}</td>`;
-          }
-          tr.innerHTML = html;
-          corpo.appendChild(tr);
-        }
+        processarEscalaCompleta();
+        prepararDadosPesquisa();
+
         document.getElementById("loading1").style.display = "none";
-        document.getElementById("tabelaCompleta").style.display = "table";
-
-        // === PREPARA BUSCA (igual) ===
-        dadosGM = [];
-        for (let i = 3; i < dadosPlanilha.length; i++) {
-          const linha = dadosPlanilha[i];
-          if (!linha[0]) continue;
-          const dia = linha[0].trim();
-          const data = linha[1].trim();
-          for (let c = 2; c < linha.length; c++) {
-            const gm = (linha[c] || '').trim();
-            if (gm) {
-              const postoOriginal = (dadosPlanilha[1][c] || '').trim();
-              let postoLimpo = postoOriginal.replace(/^E\d+\s*-?\s*/i, '').trim() || `Posto ${c - 1}`;
-              dadosGM.push({dia, data, gm: gm.toUpperCase(), local: postoLimpo});
-            }
-          }
-        }
         document.getElementById("loading2").style.display = "none";
+        document.getElementById("containerCompleta").style.display = "block";
+
+        // ATIVA O DRAG APÓS CARREGAR
+        ativarDragScroll();
 
       } catch (e) {
-        document.getElementById("loading1").innerHTML = "Erro ao carregar. Tente recarregar a página.";
-        console.error(e);
+        console.error("Erro Fatal:", e);
+        document.getElementById("loading1").style.display = "none";
+        document.getElementById("loading2").style.display = "none";
+        document.getElementById("erro1").style.display = "flex";
       }
     }
 
-    // Navegação (igual)
+    function processarEscalaCompleta() {
+      const linhaCabecalho = dadosPlanilha[1] || [];
+      const postos = linhaCabecalho.slice(2);
+
+      let htmlCab = "<tr><th>Dia</th><th>Data</th>";
+      postos.forEach((posto, index) => {
+        let nomePosto = (posto || '').trim();
+        nomePosto = nomePosto.replace(/^E\d+\s*-?\s*/i, '').trim(); 
+        if (!nomePosto) nomePosto = `Posto ${index + 1}`;
+        
+        htmlCab += `<th title="${nomePosto}">${nomePosto}</th>`;
+      });
+      htmlCab += "</tr>";
+      document.getElementById("cabecalhoCompleta").innerHTML = htmlCab;
+
+      const corpo = document.getElementById("corpoCompleta");
+      corpo.innerHTML = "";
+
+      for (let i = 3; i < dadosPlanilha.length; i++) {
+        const linha = dadosPlanilha[i];
+        if (!linha[0] || !linha[1]) continue;
+
+        const tr = document.createElement("tr");
+        let html = `<td class="dia">${linha[0].trim()}</td><td class="dia">${linha[1].trim()}</td>`;
+
+        for (let j = 2; j < linha.length; j++) {
+          const nome = (linha[j] || '').trim();
+          html += `<td class="${nome ? 'nome' : ''}">${nome || '-'}</td>`;
+        }
+        tr.innerHTML = html;
+        corpo.appendChild(tr);
+      }
+    }
+
+    function prepararDadosPesquisa() {
+      dadosGM = [];
+      const cabecalhos = dadosPlanilha[1];
+
+      for (let i = 3; i < dadosPlanilha.length; i++) {
+        const linha = dadosPlanilha[i];
+        if (!linha[0]) continue;
+
+        const dia = linha[0].trim();
+        const data = linha[1].trim();
+
+        for (let c = 2; c < linha.length; c++) {
+          const gmNome = (linha[c] || '').trim();
+          
+          if (gmNome && gmNome !== '-' && gmNome.length > 2) {
+            const postoRaw = (cabecalhos[c] || '').trim();
+            const postoLimpo = postoRaw.replace(/^E\d+\s*-?\s*/i, '').trim() || `Posto ${c - 1}`;
+            
+            dadosGM.push({
+              dia: dia,
+              data: data,
+              gm: gmNome,
+              gmUpper: gmNome.toUpperCase(),
+              local: postoLimpo,
+              dataSort: converterDataParaSort(data)
+            });
+          }
+        }
+      }
+    }
+
+    function converterDataParaSort(dataStr) {
+      try {
+        const parts = dataStr.split('/');
+        const dia = parts[0].padStart(2, '0');
+        return parseInt(dia); 
+      } catch (e) { return 0; }
+    }
+
+    // === Funcionalidade de Abas ===
     document.querySelectorAll(".menu a").forEach(link => {
       link.addEventListener("click", function(e) {
         e.preventDefault();
         document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
-        this.classList.add("active");
         document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-        document.getElementById(this.dataset.tab).classList.add("active");
-        if (this.dataset.tab === "pesquisa") setTimeout(() => document.getElementById("buscaGM").focus(), 100);
+        
+        this.classList.add("active");
+        const targetId = this.dataset.tab;
+        document.getElementById(targetId).classList.add("active");
+
+        if (targetId === "pesquisa") {
+          if(window.innerWidth <= 768) {
+             nav.classList.remove('open');
+             menuBtn.textContent = '☰';
+          }
+          setTimeout(() => document.getElementById("buscaGM").focus(), 100);
+        }
       });
     });
 
-    // AQUI ESTÁ A ÚNICA MUDANÇA: ORDENAÇÃO CORRETA POR DATA
+    // === Funcionalidade de Busca ===
     document.getElementById("buscaGM").addEventListener("input", function() {
       const termo = this.value.toUpperCase().trim();
+      const termoOriginal = this.value.trim();
+      
       const lista = document.getElementById("listaGM");
-      const res = document.getElementById("resultados");
-      const nenhum = document.getElementById("nenhum");
+      const divResultados = document.getElementById("resultados");
+      const divNenhum = document.getElementById("nenhum");
 
       if (!termo) {
-        res.style.display = "none";
-        nenhum.style.display = "none";
+        divResultados.style.display = "none";
+        divNenhum.style.display = "none";
         return;
       }
 
       const filtrados = dadosGM
-        .filter(x => x.gm.includes(termo))
-        .sort((a, b) => {
-          const diaA = parseInt(a.data.split("/")[0], 10);
-          const diaB = parseInt(b.data.split("/")[0], 10);
-          return diaA - diaB; // Ordem cronológica correta: 1, 2, 3... 30
-        });
+        .filter(item => item.gmUpper.includes(termo))
+        .sort((a, b) => a.dataSort - b.dataSort);
+
+      lista.innerHTML = "";
 
       if (filtrados.length === 0) {
-        res.style.display = "none";
-        nenhum.style.display = "block";
+        divResultados.style.display = "none";
+        divNenhum.style.display = "block";
         return;
       }
 
-      lista.innerHTML = "";
+      divNenhum.style.display = "none";
+      divResultados.style.display = "block";
+      document.getElementById("contador").textContent = filtrados.length;
+
       filtrados.forEach(d => {
-        lista.innerHTML += `<tr>
+        const tr = document.createElement("tr");
+        const nomeHighlight = d.gm.replace(new RegExp(`(${termoOriginal})`, 'gi'), '<span class="highlight">$1</span>');
+        
+        tr.innerHTML = `
           <td class="dia">${d.dia}</td>
           <td class="dia">${d.data}</td>
-          <td class="nome">${d.gm}</td>
+          <td class="nome">${nomeHighlight}</td>
           <td style="white-space: normal;">${d.local}</td>
-        </tr>`;
+        `;
+        lista.appendChild(tr);
       });
-
-      document.getElementById("contador").textContent = filtrados.length;
-      nenhum.style.display = "none";
-      res.style.display = "block";
     });
 
     carregarTudo();
